@@ -47,7 +47,7 @@ class Opportunity(models.Model):
     lost_reason_id = models.CharField(max_length=255, null=True, blank=True,default="No Data")
     lost_reason_name = models.CharField(max_length=255, default="No Data")
     followers = models.TextField(default="No Data")
-    notes = models.TextField(default="No Data")
+    notes = models.TextField(default="No Data", null=True, blank=True)
     tags = models.CharField(max_length=255, null=True, blank=True)
     engagement_score = models.IntegerField(null=True, blank=True)
     status = models.CharField(max_length=50, null=True, blank=True)

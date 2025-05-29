@@ -12,8 +12,8 @@ def import_and_create_oppor(file, locationId):
     # Load the Excel file
     file_path = file  # Change this to your actual file path
     df = pd.read_excel(file_path, engine="openpyxl")
-    print(len(df))
-    return
+    # print(len(df))
+    # return
     # df = pd.read_excel(file_path, sheet_name="Accounts Opportunity", dtype=str)
 
 

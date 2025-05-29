@@ -60,7 +60,7 @@ def handle_webhook_event(data, event_type):
             return
 
         
-        opportunity = opportunity_data.get("opportunity")
+        opportunity = opportunity_data.get("opportunity")       
 
         if "customFields" in opportunity:
             for field in opportunity["customFields"]:

@@ -2,9 +2,9 @@
 import os
 from celery import Celery
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ghlonboard.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'escale-datamanagement.settings')
 
-app = Celery('ghlonboard')
+app = Celery('escale-datamanagement')
 
 app.config_from_object('django.conf:settings', namespace='CELERY')
 

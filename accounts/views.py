@@ -5,7 +5,10 @@ import json
 from django.shortcuts import redirect, render
 from accounts.models import GHLAuthCredentials
 from django.views.decorators.csrf import csrf_exempt
+from accounts.helpers import get_location_data
 # Create your views here.
+from accounts.models import WebhookLog
+from accounts.tasks import handle_webhook_event
 
 
 GHL_CLIENT_ID = config("GHL_CLIENT_ID")
@@ -59,32 +62,39 @@ def tokens(request):
         response_data = response.json()
         if not response_data:
             return
-        print("response.data: ", response_data)
-        if not response_data.get('access_token'):
-            return render(request, 'onboard.html', context={
-                "message": "Invalid JSON response from API",
-                "status_code": response.status_code,
-                "response_text": response.text[:400]
-            }, status=400)
 
-        obj, created = GHLAuthCredentials.objects.update_or_create(
-            location_id= response_data.get("locationId"),
-            defaults={
-                "access_token": response_data.get("access_token"),
-                "refresh_token": response_data.get("refresh_token"),
-                "expires_in": response_data.get("expires_in"),
-                "scope": response_data.get("scope"),
-                "user_type": response_data.get("userType"),
-                "company_id": response_data.get("companyId"),
-                "user_id":response_data.get("userId"),
 
-            }
-        )
-        return render(request, 'onboard.html', context = {
-            "message": "Authentication successful",
-            "access_token": response_data.get('access_token'),
-            "token_stored": True
-        })
+        location_data = get_location_data(location_id=response_data.get("locationId"), access_token=response_data.get("access_token"))
+        if location_data:
+            
+            # print("location Data: ", location_data)
+            response_data["location_name"] = location_data['location']['name']
+            if not response_data.get('access_token'):
+                return render(request, 'onboard.html', context={
+                    "message": "Invalid JSON response from API",
+                    "status_code": response.status_code,
+                    "response_text": response.text[:400]
+                }, status=400)
+
+            obj, created = GHLAuthCredentials.objects.update_or_create(
+                location_id= response_data.get("locationId"),
+                defaults={
+                    "access_token": response_data.get("access_token"),
+                    "refresh_token": response_data.get("refresh_token"),
+                    "expires_in": response_data.get("expires_in"),
+                    "scope": response_data.get("scope"),
+                    "user_type": response_data.get("userType"),
+                    "company_id": response_data.get("companyId"),
+                    "user_id":response_data.get("userId"),
+                    "location_name":response_data.get("location_name")
+
+                }
+            )
+            return render(request, 'onboard.html', context = {
+                "message": "Authentication successful",
+                "access_token": response_data.get('access_token'),
+                "token_stored": True
+            })
         
     except requests.exceptions.JSONDecodeError:
         return render(request, 'onboard.html', context={
@@ -107,5 +117,26 @@ def get_token(request):
         return JsonResponse({'error': 'Token not found for the given locationId'}, status=404)
     
 
-# def token_refresh(request):
-#     if request.method == "POST":
+
+
+
+@csrf_exempt
+def webhook_handler_for_opportunity(request):
+    if request.method != "POST":
+        return JsonResponse({"message": "Method not allowed"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        print("date:----- ", data)
+        if data["webhookId"]:
+            try:
+                WebhookLog.objects.get(webhook_id = data["webhookId"])
+                return JsonResponse({"message":"Webhook Already Recieved"}, status=200)
+            except WebhookLog.DoesNotExist:
+                WebhookLog.objects.create(data=data, webhook_id=data['webhookId'])
+                event_type = data.get("type")
+                handle_webhook_event.delay(data, event_type)
+                return JsonResponse({"message":"Webhook received"}, status=200)
+    except Exception as e:
+        print("error response: ", str(e))
+        return JsonResponse({"error": str(e)}, status=500)

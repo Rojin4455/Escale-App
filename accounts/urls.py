@@ -7,5 +7,5 @@ urlpatterns = [
     path("auth/tokens/", tokens, name="oauth_tokens"),
     path("auth/callback/", callback, name="oauth_callback"),
     path('get-token/', get_token),
-    # path("token-refresh/",token_refresh)
+    path('webhook',webhook_handler_for_opportunity)
 ]

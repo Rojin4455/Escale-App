@@ -17,17 +17,22 @@ GHL_REDIRECTED_URI = config("GHL_REDIRECTED_URI")
 TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token"
 SCOPE = config("SCOPE")
 
-
+locations = GHLAuthCredentials.objects.all().values_list("location_id", "location_name")
 def onboard(request):
-    return render(request,'onboard.html')
+    context = {
+        "locations":locations
+    }
+    print("hererere")
+    return render(request,'onboard.html', context)
 
 
 def auth_connect(request):
-    auth_url = ("https://marketplace.leadconnectorhq.com/oauth/chooselocation?response_type=code&"
+    auth_url = ("https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&"
                 f"redirect_uri={GHL_REDIRECTED_URI}&"
                 f"client_id={GHL_CLIENT_ID}&"
                 f"scope={SCOPE}"
                 )
+    
     return redirect(auth_url)
 
 
@@ -71,6 +76,7 @@ def tokens(request):
             response_data["location_name"] = location_data['location']['name']
             if not response_data.get('access_token'):
                 return render(request, 'onboard.html', context={
+                    "locations":locations,
                     "message": "Invalid JSON response from API",
                     "status_code": response.status_code,
                     "response_text": response.text[:400]
@@ -91,6 +97,7 @@ def tokens(request):
                 }
             )
             return render(request, 'onboard.html', context = {
+                "locations":locations,
                 "message": "Authentication successful",
                 "access_token": response_data.get('access_token'),
                 "token_stored": True
@@ -98,6 +105,7 @@ def tokens(request):
         
     except requests.exceptions.JSONDecodeError:
         return render(request, 'onboard.html', context={
+            "locations":locations,
             "error": "Invalid JSON response from API",
             "status_code": response.status_code,
             "response_text": response.text[:500]

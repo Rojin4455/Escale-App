@@ -28,7 +28,7 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '3.89.140.123', 'auth.digi-flow.co.uk', 'ee1d-223-181-14-215.ngrok-free.app']
+ALLOWED_HOSTS = ['localhost', '3.89.140.123','hcc.trysaasyway.com', 'auth.digi-flow.co.uk', 'ee1d-223-181-14-215.ngrok-free.app']
 
 
 # Application definition

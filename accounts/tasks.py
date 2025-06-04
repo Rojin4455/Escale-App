@@ -5,41 +5,42 @@ from accounts.models import GHLAuthCredentials, Opportunity, CustomField
 from decouple import config
 from accounts.helpers import get_ghl_opportunity,create_opportunity, update_opportunity, get_custom_field
 
-@shared_task
+@shared_task(name="accounts.tasks.make_api_call")
 def make_api_call():
-    credentials = GHLAuthCredentials.objects.first()
+    tokens = GHLAuthCredentials.objects.all()
+
+    for credentials in tokens:
     
-    print("credentials tokenL", credentials)
-    refresh_token = credentials.refresh_token
+        print("credentials tokenL", credentials)
+        refresh_token = credentials.refresh_token
 
-    
-    response = requests.post('https://services.leadconnectorhq.com/oauth/token', data={
-        'grant_type': 'refresh_token',
-        'client_id': config("GHL_CLIENT_ID"),
-        'client_secret': config("GHL_CLIENT_SECRET"),
-        'refresh_token': refresh_token
-    })
-    
-    new_tokens = response.json()
-    print("responseL ", new_tokens)
-    obj, created = GHLAuthCredentials.objects.update_or_create(
-            location_id= new_tokens.get("locationId"),
-            defaults={
-                "access_token": new_tokens.get("access_token"),
-                "refresh_token": new_tokens.get("refresh_token"),
-                "expires_in": new_tokens.get("expires_in"),
-                "scope": new_tokens.get("scope"),
-                "user_type": new_tokens.get("userType"),
-                "company_id": new_tokens.get("companyId"),
-                "user_id":new_tokens.get("userId"),
+        
+        response = requests.post('https://services.leadconnectorhq.com/oauth/token', data={
+            'grant_type': 'refresh_token',
+            'client_id': config("GHL_CLIENT_ID"),
+            'client_secret': config("GHL_CLIENT_SECRET"),
+            'refresh_token': refresh_token
+        })
+        
+        new_tokens = response.json()
+        print("responseL ", new_tokens)
+        obj, created = GHLAuthCredentials.objects.update_or_create(
+                location_id= new_tokens.get("locationId"),
+                defaults={
+                    "access_token": new_tokens.get("access_token"),
+                    "refresh_token": new_tokens.get("refresh_token"),
+                    "expires_in": new_tokens.get("expires_in"),
+                    "scope": new_tokens.get("scope"),
+                    "user_type": new_tokens.get("userType"),
+                    "company_id": new_tokens.get("companyId"),
+                    "user_id":new_tokens.get("userId"),
 
-            }
-        )
+                }
+            )
 
 
 
-@shared_task()
-
+@shared_task
 def handle_webhook_event(data, event_type):
     print("webhook Data: ", data)
     location = GHLAuthCredentials.objects.get(location_id = data['locationId'])
